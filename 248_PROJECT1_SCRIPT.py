@@ -158,6 +158,10 @@ players = df_cleaned.iloc[:, 0].str.strip() # Assuming the first column is the p
 ############# SCATTER PLOT PCA RESULTS WITH PLAYER COLORING ################
 # Use the first two principal components for the scatter plot
 
+# Get unique players and assign each a color
+unique_players = players.unique()
+colors = cm.viridis(np.linspace(0, 1, len(unique_players)))  # Generate a color for each player
+
 # Plot PC1 vs PC2 separately
 figure(figsize=(8, 6))
 for i, player in enumerate(unique_players):
