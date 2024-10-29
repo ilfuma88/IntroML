@@ -1,0 +1,90 @@
+
+-------------------------------------------------------------------------------------------------------------------------------
+02450 Introduction to Machine Learning and Data Mining - 2024 Fall [10/25/2024, 14:32:28]
+
+
+Feedback for report no.: 1
+Group: 248
+Student(s): Riccardo Conti (s230085) & Leonardo Faggion (s233661) & Eleonora Failla (s243151)
+Primary marker: Peter Vestereng Larsen
+
+Please validate the list of student ids on this feedback form to make sure it is correct and matches the group when 
+you submitted report 1 (contact the course coordinator if there are issues with group membership/ids).
+
+Note: The feedback is provided for individual group members; however, it will typically be identical for all members
+unless the markers have found it necessary to differentiate the assessment and feedback.
+
+-------------------------------------------------------------------------------------------------------------------------------
+        
+::::: Evaluation of Riccardo Conti (s230085) :::::: 
+Assessment: PASSED
+
+
+Feedback: Thank you for the report.
+
+Your report contains a significant difference in terms of workload and quality. The overall evaluation of your report is therefore different:
+
+s243151: You have written a good report with many excellent elements.
+s230085 & s233661: You have written a fair report.
+
+You had a nice introduction to how you created the dataset. The report could have benefitted from more information about what has previously been done with sports datasets (did they use machine learning for betting predictions, etc?).
+
+In your section describing the attributes, it is nice that you give an explanation of each attribute. However, many of your attributes are discrete instead of continuous. For example, 2-points shots attempted is discrete, you cannot attempt 2-point shot 2.5 times. The same goes for 3-points shots, free throws, points etc.
+When you describe the attributes of the data, you should also have included some summary statistics such as mean, standard deviation, percentiles, min/max values, so the reader can have an understanding of the data.
+
+In your section about data visualization, your boxplots and histograms were nice, and you had some good comments regarding the distributions. The heatmap is also a good choice for visualizing the correlation, and your argument for keeping all attributes was good.
+
+Your section about PCA was done to a very high standard: I especially liked the analysis of explained variance, and your coefficient plots are nicely done as well. When you plotted the data against the principal components, it was really good that you color coded the different classes and did so across combinations of PCs.
+
+You had some good reflections about the data in your conclusion. PCA does not always allow you to reduce dimensionality in a significant way, and that is just how it goes sometimes. As you mention, you might have had more significant results if you also included less prominent (or all around good) players, and PCA might allow you to distinguish them.
+
+-------------------------------------------------------------------------------------------------------------------------------
+        
+::::: Evaluation of Leonardo Faggion (s233661) :::::: 
+Assessment: PASSED
+
+
+Feedback: Thank you for the report.
+
+Your report contains a significant difference in terms of workload and quality. The overall evaluation of your report is therefore different:
+
+s243151: You have written a good report with many excellent elements.
+s230085 & s233661: You have written a fair report.
+
+You had a nice introduction to how you created the dataset. The report could have benefitted from more information about what has previously been done with sports datasets (did they use machine learning for betting predictions, etc?).
+
+In your section describing the attributes, it is nice that you give an explanation of each attribute. However, many of your attributes are discrete instead of continuous. For example, 2-points shots attempted is discrete, you cannot attempt 2-point shot 2.5 times. The same goes for 3-points shots, free throws, points etc.
+When you describe the attributes of the data, you should also have included some summary statistics such as mean, standard deviation, percentiles, min/max values, so the reader can have an understanding of the data.
+
+In your section about data visualization, your boxplots and histograms were nice, and you had some good comments regarding the distributions. The heatmap is also a good choice for visualizing the correlation, and your argument for keeping all attributes was good.
+
+Your section about PCA was done to a very high standard: I especially liked the analysis of explained variance, and your coefficient plots are nicely done as well. When you plotted the data against the principal components, it was really good that you color coded the different classes and did so across combinations of PCs.
+
+You had some good reflections about the data in your conclusion. PCA does not always allow you to reduce dimensionality in a significant way, and that is just how it goes sometimes. As you mention, you might have had more significant results if you also included less prominent (or all around good) players, and PCA might allow you to distinguish them.
+
+-------------------------------------------------------------------------------------------------------------------------------
+        
+::::: Evaluation of Eleonora Failla (s243151) :::::: 
+Assessment: PASSED
+
+
+Feedback: Thank you for the report.
+
+Your report contains a significant difference in terms of workload and quality. The overall evaluation of your report is therefore different:
+
+s243151: You have written a good report with many excellent elements.
+s230085 & s233661: You have written a fair report.
+
+You had a nice introduction to how you created the dataset. The report could have benefitted from more information about what has previously been done with sports datasets (did they use machine learning for betting predictions, etc?).
+
+In your section describing the attributes, it is nice that you give an explanation of each attribute. However, many of your attributes are discrete instead of continuous. For example, 2-points shots attempted is discrete, you cannot attempt 2-point shot 2.5 times. The same goes for 3-points shots, free throws, points etc.
+When you describe the attributes of the data, you should also have included some summary statistics such as mean, standard deviation, percentiles, min/max values, so the reader can have an understanding of the data.
+
+In your section about data visualization, your boxplots and histograms were nice, and you had some good comments regarding the distributions. The heatmap is also a good choice for visualizing the correlation, and your argument for keeping all attributes was good.
+
+Your section about PCA was done to a very high standard: I especially liked the analysis of explained variance, and your coefficient plots are nicely done as well. When you plotted the data against the principal components, it was really good that you color coded the different classes and did so across combinations of PCs.
+
+You had some good reflections about the data in your conclusion. PCA does not always allow you to reduce dimensionality in a significant way, and that is just how it goes sometimes. As you mention, you might have had more significant results if you also included less prominent (or all around good) players, and PCA might allow you to distinguish them.
+
+-------------------------------------------------------------------------------------------------------------------------------
+        
