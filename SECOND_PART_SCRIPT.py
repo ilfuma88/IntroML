@@ -25,7 +25,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn import model_selection
 from dtuimldmtools import rlr_validate 
-from dtuimldmtools import bmplot, feature_selector_lr
+from dtuimldmtools import bmplot, feature_selector_lr, print_table
+from sklearn.metrics import mean_squared_error, 
 
 
 # Set the working directory (adjust the path as necessary)
@@ -230,3 +231,99 @@ print("Weights in last fold:")
 for m in range(M):
     print("{:>15} {:>15}".format(attributeNames[m], np.round(w_rlr[m, -1], 2)))
 
+
+
+
+
+
+# # Sample data (replace with actual data)
+# X = ...  # Your input features
+# y = ...  # Your target variable
+
+# # Hyperparameter ranges
+# hidden_units = [1, 2, 3, 4, 5]  # Example for ANN
+# lambdas = [0.01, 0.05, 0.1]     # Example for Ridge regression
+
+# # Outer and inner CV folds
+# K1 = 10  # Outer CV
+# K2 = 10  # Inner CV
+
+# # Prepare for results collection
+# results = []
+
+# # Outer CV loop
+# outer_cv = KFold(n_splits=K1, shuffle=True, random_state=42)
+
+# for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
+#     X_train, X_test = X[train_idx], X[test_idx]
+#     y_train, y_test = y[train_idx], y[test_idx]
+
+#     # Variables to store best hyperparameters and errors
+#     best_h = None
+#     best_lambda = None
+#     best_ann_error = np.inf
+#     best_lr_error = np.inf
+
+#     # Inner CV for hyperparameter tuning
+#     inner_cv = KFold(n_splits=K2, shuffle=True, random_state=42)
+
+#     for h in hidden_units:
+#         for lmbd in lambdas:
+#             ann_errors = []
+#             lr_errors = []
+
+#             # Inner CV loop
+#             for inner_train_idx, inner_val_idx in inner_cv.split(X_train):
+#                 X_inner_train, X_val = X_train[inner_train_idx], X_train[inner_val_idx]
+#                 y_inner_train, y_val = y_train[inner_train_idx], y_train[inner_val_idx]
+
+#                 # Train ANN
+#                 ann = MLPRegressor(hidden_layer_sizes=(h,), max_iter=1000, random_state=42)
+#                 ann.fit(X_inner_train, y_inner_train)
+#                 y_pred_ann = ann.predict(X_val)
+#                 ann_errors.append(mean_squared_error(y_val, y_pred_ann))
+
+#                 # Train Ridge Regression
+#                 lr = Ridge(alpha=lmbd)
+#                 lr.fit(X_inner_train, y_inner_train)
+#                 y_pred_lr = lr.predict(X_val)
+#                 lr_errors.append(mean_squared_error(y_val, y_pred_lr))
+
+#             # Evaluate and update best hyperparameters
+#             mean_ann_error = np.mean(ann_errors)
+#             mean_lr_error = np.mean(lr_errors)
+
+#             if mean_ann_error < best_ann_error:
+#                 best_ann_error = mean_ann_error
+#                 best_h = h
+#             if mean_lr_error < best_lr_error:
+#                 best_lr_error = mean_lr_error
+#                 best_lambda = lmbd
+
+#     # Train with best hyperparameters on full training set
+#     ann_best = MLPRegressor(hidden_layer_sizes=(best_h,), max_iter=1000, random_state=42)
+#     ann_best.fit(X_train, y_train)
+#     ann_test_error = mean_squared_error(y_test, ann_best.predict(X_test))
+
+#     lr_best = Ridge(alpha=best_lambda)
+#     lr_best.fit(X_train, y_train)
+#     lr_test_error = mean_squared_error(y_test, lr_best.predict(X_test))
+
+#     # Baseline: Predict mean of y_train for all test samples
+#     baseline_prediction = np.mean(y_train)
+#     baseline_test_error = mean_squared_error(y_test, np.full_like(y_test, baseline_prediction))
+
+#     # Append results for the current fold
+#     results.append({
+#         'fold': i + 1,
+#         'best_h': best_h,
+#         'ann_test_error': ann_test_error,
+#         'best_lambda': best_lambda,
+#         'lr_test_error': lr_test_error,
+#         'baseline_test_error': baseline_test_error
+#     })
+
+# # Print results table
+# print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
+# for res in results:
+#     print(f"{res['fold']} | {res['best_h']} | {res['ann_test_error']:.2f} | {res['best_lambda']} | {res['lr_test_error']:.2f} | {res['baseline_test_error']:.2f}")
