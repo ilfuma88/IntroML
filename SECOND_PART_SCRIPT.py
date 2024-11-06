@@ -3,6 +3,7 @@
 # %% Import libraries
 import os
 import importlib_resources
+import torch
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -30,7 +31,7 @@ from sklearn.linear_model import Ridge
 from sklearn.neural_network import MLPRegressor
 
 # Set the working directory (adjust the path as necessary)
-os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
+# os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
 
 # %% Load dataset
 filename = "raw data.csv"
@@ -86,8 +87,18 @@ K = 5
 CV = model_selection.KFold(K, shuffle=True)
 # CV = model_selection.KFold(K, shuffle=False)
 
-# Values of lambda
-lambdas = np.power(10.0, np.arange(-5, 7))
+
+# Initial lambda values
+initial_lambdas = [ 0.001, 0.01, 0.05, 0.1, 1, 10, 100, 1000, 10000]
+
+# Generate additional values between 0.01 and 10
+additional_lambdas = np.logspace(np.log10(10), np.log10(100), num=10)
+
+# Combine the initial and additional values, ensuring uniqueness and sorting
+lambdas = np.unique(np.concatenate((initial_lambdas, additional_lambdas)))
+
+print(lambdas)
+
 
 # Initialize variables
 # T = len(lambdas)
@@ -161,25 +172,19 @@ for train_index, test_index in CV.split(X, y):
     Error_test[k] = (
         np.square(y_test - X_test @ w_noreg[:, k]).sum(axis=0) / y_test.shape[0]
     )
-    # OR ALTERNATIVELY: you can use sklearn.linear_model module for linear regression:
-    # m = lm.LinearRegression().fit(X_train, y_train)
-    # Error_train[k] = np.square(y_train-m.predict(X_train)).sum()/y_train.shape[0]
-    # Error_test[k] = np.square(y_test-m.predict(X_test)).sum()/y_test.shape[0]
-
     # Display the results for the last cross-validation fold
     if k == K - 1:
-        figure(k, figsize=(12, 8))
-        subplot(1, 2, 1)
+        # figure(k, figsize=(12, 8))
+        # subplot(1, 2, 1)
+        figure(1)
         semilogx(lambdas, mean_w_vs_lambda.T[:, 1:], ".-")  # Don't plot the bias term
         xlabel("Regularization factor")
         ylabel("Mean Coefficient Values")
         grid()
-        # You can choose to display the legend, but it's omitted for a cleaner
-        # plot, since there are many attributes
-        # legend(attributeNames[1:], loc='best')
 
-        subplot(1, 2, 2)
-        title("Optimal lambda: 1e{0}".format(np.log10(opt_lambda)))
+        # subplot(1, 2, 2)
+        figure(2)
+        title("Optimal lambda: {0}".format(opt_lambda))
         loglog(
             lambdas, train_err_vs_lambda.T, "b.-", lambdas, test_err_vs_lambda.T, "r.-"
         )
@@ -233,17 +238,166 @@ for m in range(M):
 
 
 
+def train_neural_netNOPRINT(
+    model, loss_fn, X, y, n_replicates=3, max_iter=10000, tolerance=1e-6
+):
+    """
+    Train a neural network with PyTorch based on a training set consisting of
+    observations X and class y. The model and loss_fn inputs define the
+    architecture to train and the cost-function update the weights based on,
+    respectively.
+
+    Args:
+        model: A function handle to make a torch.nn.Sequential.
+        loss_fn: A torch.nn-loss, e.g. torch.nn.BCELoss() for binary
+                 binary classification, torch.nn.CrossEntropyLoss() for
+                 multiclass classification, or torch.nn.MSELoss() for
+                 regression.
+        X: The input observations as a PyTorch tensor.
+        y: The target classes as a PyTorch tensor.
+        n_replicates: An integer specifying number of replicates to train,
+                      the neural network with the lowest loss is returned.
+        max_iter: An integer specifying the maximum number of iterations
+                  to do (default 10000).
+        tolerance: A float describing the tolerance/convergence criterion
+                   for minimum relative change in loss (default 1e-6)
+
+
+    Returns:
+        A list of three elements:
+            best_net: A trained torch.nn.Sequential that had the lowest
+                      loss of the trained replicates.
+            final_loss: A float specifying the loss of best performing net.
+            learning_curve: A list containing the learning curve of the best net.
+
+    Usage:
+        Assuming loaded dataset (X,y) has been split into a training and
+        test set called (X_train, y_train) and (X_test, y_test), and
+        that the dataset has been cast into PyTorch tensors using e.g.:
+            X_train = torch.tensor(X_train, dtype=torch.float)
+        Here illustrating a binary classification example based on e.g.
+        M=2 features with H=2 hidden units:
+
+        >>> # Define the overall architechture to use
+        >>> model = lambda: torch.nn.Sequential(
+                    torch.nn.Linear(M, H),  # M features to H hiden units
+                    torch.nn.Tanh(),        # 1st transfer function
+                    torch.nn.Linear(H, 1),  # H hidden units to 1 output neuron
+                    torch.nn.Sigmoid()      # final tranfer function
+                    )
+        >>> loss_fn = torch.nn.BCELoss() # define loss to use
+        >>> net, final_loss, learning_curve = train_neural_net(model,
+                                                       loss_fn,
+                                                       X=X_train,
+                                                       y=y_train,
+                                                       n_replicates=3)
+        >>> y_test_est = net(X_test) # predictions of network on test set
+        >>> # To optain "hard" class predictions, threshold the y_test_est
+        >>> See exercise ex8_2_2.py for indepth example.
+
+        For multi-class with C classes, we need to change this model to e.g.:
+        >>> model = lambda: torch.nn.Sequential(
+                            torch.nn.Linear(M, H), #M features to H hiden units
+                            torch.nn.ReLU(), # 1st transfer function
+                            torch.nn.Linear(H, C), # H hidden units to C classes
+                            torch.nn.Softmax(dim=1) # final tranfer function
+                            )
+        >>> loss_fn = torch.nn.CrossEntropyLoss()
+
+        And the final class prediction is based on the argmax of the output
+        nodes:
+        >>> y_class = torch.max(y_test_est, dim=1)[1]
+    """
+
+    # Specify maximum number of iterations for training
+    logging_frequency = 1000  # display the loss every 1000th iteration
+    best_final_loss = 1e100
+    for r in range(n_replicates):
+        # print("\n\tReplicate: {}/{}".format(r + 1, n_replicates))
+        # Make a new net (calling model() makes a new initialization of weights)
+        net = model()
+
+        # initialize weights based on limits that scale with number of in- and
+        # outputs to the layer, increasing the chance that we converge to
+        # a good solution
+        torch.nn.init.xavier_uniform_(net[0].weight)
+        torch.nn.init.xavier_uniform_(net[2].weight)
+
+        # We can optimize the weights by means of stochastic gradient descent
+        # The learning rate, lr, can be adjusted if training doesn't perform as
+        # intended try reducing the lr. If the learning curve hasn't converged
+        # (i.e. "flattend out"), you can try try increasing the maximum number of
+        # iterations, but also potentially increasing the learning rate:
+        # optimizer = torch.optim.SGD(net.parameters(), lr = 5e-3)
+
+        # A more complicated optimizer is the Adam-algortihm, which is an extension
+        # of SGD to adaptively change the learing rate, which is widely used:
+        optimizer = torch.optim.Adam(net.parameters())
+
+        # Train the network while displaying and storing the loss
+        # print("\t\t{}\t{}\t\t\t{}".format("Iter", "Loss", "Rel. loss"))
+        learning_curve = []  # setup storage for loss at each step
+        old_loss = 1e6
+        for i in range(max_iter):
+            y_est = net(X)  # forward pass, predict labels on training set
+            loss = loss_fn(y_est, y)  # determine loss
+            loss_value = loss.data.numpy()  # get numpy array instead of tensor
+            learning_curve.append(loss_value)  # record loss for later display
+
+            # Convergence check, see if the percentual loss decrease is within
+            # tolerance:
+            p_delta_loss = np.abs(loss_value - old_loss) / old_loss
+            if p_delta_loss < tolerance:
+                break
+            old_loss = loss_value
+
+            # display loss with some frequency:
+            if (i != 0) & ((i + 1) % logging_frequency == 0):
+                print_str = (
+                    "\t\t"
+                    + str(i + 1)
+                    + "\t"
+                    + str(loss_value)
+                    + "\t"
+                    + str(p_delta_loss)
+                )
+                # print(print_str)
+            # do backpropagation of loss and optimize weights
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        # display final loss
+        # print("\t\tFinal loss:")
+        # print_str = (
+        #     "\t\t" + str(i + 1) + "\t" + str(loss_value) + "\t" + str(p_delta_loss)
+        # )
+        # print(print_str)
+
+        if loss_value < best_final_loss:
+            best_net = net
+            best_final_loss = loss_value
+            best_learning_curve = learning_curve
+
+    # Return the best curve along with its final loss and learing curve
+    return best_net, best_final_loss, best_learning_curve
+
+
+
+
+
+
 # Sample data (replace with actual data)
 X = X_combined_standard[:, :-1]
 y = X_combined_standard[:, -1]
 
 # Hyperparameter ranges
-hidden_units = [1]  # Example for ANN
-lambdas = [0.01, 0.05, 0.1, 1, 10, 100]     # Example for Ridge regression
+hidden_units = [1, 2, 3, 4, 5, 10]  # Example for ANN
+lambdas = [0.01, 0.05, 0.1, 1, 10, 100]  # Example for Ridge regression
 
 # Outer and inner CV folds
-K1 = 5  # Outer CV
-K2 = 5  # Inner CV
+K1 = 10  # Outer CV
+K2 = 10  # Inner CV
 
 # Prepare for results collection
 results = []
@@ -264,35 +418,53 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
     # Inner CV for hyperparameter tuning
     inner_cv = KFold(n_splits=K2, shuffle=True, random_state=42)
 
-    for h in hidden_units:
-        for lmbd in lambdas:
+    for inner_train_idx, inner_val_idx in inner_cv.split(X_train):
+        X_inner_train, X_val = X_train[inner_train_idx], X_train[inner_val_idx]
+        y_inner_train, y_val = y_train[inner_train_idx], y_train[inner_val_idx]
+
+        for h in hidden_units:
             ann_errors = []
-            lr_errors = []
 
-            # Inner CV loop
-            for inner_train_idx, inner_val_idx in inner_cv.split(X_train):
-                X_inner_train, X_val = X_train[inner_train_idx], X_train[inner_val_idx]
-                y_inner_train, y_val = y_train[inner_train_idx], y_train[inner_val_idx]
+            # Define the model structure
+            model = lambda: torch.nn.Sequential(
+                torch.nn.Linear(X_inner_train.shape[1], h),  # M features to H hidden units
+                torch.nn.ReLU(),  # 1st transfer function
+                torch.nn.Linear(h, 1),  # H hidden units to 1 output
+                torch.nn.Sigmoid(),  # final transfer function
+            )
+            loss_fn = torch.nn.MSELoss()
 
-                # Train ANN
-                ann = MLPRegressor(hidden_layer_sizes=(h,), max_iter=1000, random_state=42)
-                ann.fit(X_inner_train, y_inner_train)
-                y_pred_ann = ann.predict(X_val)
-                ann_errors.append(mean_squared_error(y_val, y_pred_ann))
+            # Train the network
+            net, _, _ = train_neural_netNOPRINT(
+                model,
+                loss_fn,
+                X=torch.tensor(X_inner_train, dtype=torch.float),
+                y=torch.tensor(y_inner_train.reshape(-1, 1), dtype=torch.float),  # Ensure y has the same shape as the input
+                n_replicates=3,
+                max_iter=10000,
+            )
 
-                # Train Ridge Regression
-                lr = Ridge(alpha=lmbd)
-                lr.fit(X_inner_train, y_inner_train)
-                y_pred_lr = lr.predict(X_val)
-                lr_errors.append(mean_squared_error(y_val, y_pred_lr))
+            # Predict and calculate error
+            y_pred_ann = net(torch.tensor(X_val, dtype=torch.float)).data.numpy()
+            ann_errors.append(mean_squared_error(y_val.reshape(-1, 1), y_pred_ann))  # Ensure y_val has the same shape as the prediction
 
-            # Evaluate and update best hyperparameters
             mean_ann_error = np.mean(ann_errors)
-            mean_lr_error = np.mean(lr_errors)
-
             if mean_ann_error < best_ann_error:
                 best_ann_error = mean_ann_error
                 best_h = h
+            
+
+        for lmbd in lambdas:
+            lr_errors = []
+
+            # Train Ridge Regression
+            lambdaI = lmbd * np.eye(X_inner_train.shape[1])
+            lambdaI[0, 0] = 0  # Do not regularize the bias term
+            w_rlr = np.linalg.solve(X_inner_train.T @ X_inner_train + lambdaI, X_inner_train.T @ y_inner_train).squeeze()
+            y_pred_lr = X_val @ w_rlr
+            lr_errors.append(mean_squared_error(y_val, y_pred_lr))
+
+            mean_lr_error = np.mean(lr_errors)
             if mean_lr_error < best_lr_error:
                 best_lr_error = mean_lr_error
                 best_lambda = lmbd
@@ -302,9 +474,10 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
     ann_best.fit(X_train, y_train)
     ann_test_error = mean_squared_error(y_test, ann_best.predict(X_test))
 
-    lr_best = Ridge(alpha=best_lambda)
-    lr_best.fit(X_train, y_train)
-    lr_test_error = mean_squared_error(y_test, lr_best.predict(X_test))
+    lambdaI = best_lambda * np.eye(X_train.shape[1])
+    lambdaI[0, 0] = 0  # Do not regularize the bias term
+    w_rlr = np.linalg.solve(X_train.T @ X_train + lambdaI, X_train.T @ y_train).squeeze()
+    lr_test_error = mean_squared_error(y_test, X_test @ w_rlr)
 
     # Baseline: Predict mean of y_train for all test samples
     baseline_prediction = np.mean(y_train)
@@ -319,6 +492,8 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
         'lr_test_error': lr_test_error,
         'baseline_test_error': baseline_test_error
     })
+
+    print(f"Fold {i + 1} completed")
 
 # Print results table
 print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
