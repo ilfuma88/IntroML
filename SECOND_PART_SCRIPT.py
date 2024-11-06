@@ -24,10 +24,10 @@ from matplotlib.pylab import (
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn import model_selection
-from dtuimldmtools import rlr_validate 
-from dtuimldmtools import bmplot, feature_selector_lr, print_table
-from sklearn.metrics import mean_squared_error, 
-
+from dtuimldmtools import *
+from sklearn.metrics import mean_squared_error 
+from sklearn.linear_model import Ridge
+from sklearn.neural_network import MLPRegressor
 
 # Set the working directory (adjust the path as necessary)
 os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
@@ -87,7 +87,7 @@ CV = model_selection.KFold(K, shuffle=True)
 # CV = model_selection.KFold(K, shuffle=False)
 
 # Values of lambda
-lambdas = np.power(10.0, np.arange(-5, 9))
+lambdas = np.power(10.0, np.arange(-5, 7))
 
 # Initialize variables
 # T = len(lambdas)
@@ -233,97 +233,94 @@ for m in range(M):
 
 
 
+# Sample data (replace with actual data)
+X = X_combined_standard[:, :-1]
+y = X_combined_standard[:, -1]
 
+# Hyperparameter ranges
+hidden_units = [1]  # Example for ANN
+lambdas = [0.01, 0.05, 0.1, 1, 10, 100]     # Example for Ridge regression
 
+# Outer and inner CV folds
+K1 = 5  # Outer CV
+K2 = 5  # Inner CV
 
-# # Sample data (replace with actual data)
-# X = ...  # Your input features
-# y = ...  # Your target variable
+# Prepare for results collection
+results = []
 
-# # Hyperparameter ranges
-# hidden_units = [1, 2, 3, 4, 5]  # Example for ANN
-# lambdas = [0.01, 0.05, 0.1]     # Example for Ridge regression
+# Outer CV loop
+outer_cv = KFold(n_splits=K1, shuffle=True, random_state=42)
 
-# # Outer and inner CV folds
-# K1 = 10  # Outer CV
-# K2 = 10  # Inner CV
+for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
+    X_train, X_test = X[train_idx], X[test_idx]
+    y_train, y_test = y[train_idx], y[test_idx]
 
-# # Prepare for results collection
-# results = []
+    # Variables to store best hyperparameters and errors
+    best_h = None
+    best_lambda = None
+    best_ann_error = np.inf
+    best_lr_error = np.inf
 
-# # Outer CV loop
-# outer_cv = KFold(n_splits=K1, shuffle=True, random_state=42)
+    # Inner CV for hyperparameter tuning
+    inner_cv = KFold(n_splits=K2, shuffle=True, random_state=42)
 
-# for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
-#     X_train, X_test = X[train_idx], X[test_idx]
-#     y_train, y_test = y[train_idx], y[test_idx]
+    for h in hidden_units:
+        for lmbd in lambdas:
+            ann_errors = []
+            lr_errors = []
 
-#     # Variables to store best hyperparameters and errors
-#     best_h = None
-#     best_lambda = None
-#     best_ann_error = np.inf
-#     best_lr_error = np.inf
+            # Inner CV loop
+            for inner_train_idx, inner_val_idx in inner_cv.split(X_train):
+                X_inner_train, X_val = X_train[inner_train_idx], X_train[inner_val_idx]
+                y_inner_train, y_val = y_train[inner_train_idx], y_train[inner_val_idx]
 
-#     # Inner CV for hyperparameter tuning
-#     inner_cv = KFold(n_splits=K2, shuffle=True, random_state=42)
+                # Train ANN
+                ann = MLPRegressor(hidden_layer_sizes=(h,), max_iter=1000, random_state=42)
+                ann.fit(X_inner_train, y_inner_train)
+                y_pred_ann = ann.predict(X_val)
+                ann_errors.append(mean_squared_error(y_val, y_pred_ann))
 
-#     for h in hidden_units:
-#         for lmbd in lambdas:
-#             ann_errors = []
-#             lr_errors = []
+                # Train Ridge Regression
+                lr = Ridge(alpha=lmbd)
+                lr.fit(X_inner_train, y_inner_train)
+                y_pred_lr = lr.predict(X_val)
+                lr_errors.append(mean_squared_error(y_val, y_pred_lr))
 
-#             # Inner CV loop
-#             for inner_train_idx, inner_val_idx in inner_cv.split(X_train):
-#                 X_inner_train, X_val = X_train[inner_train_idx], X_train[inner_val_idx]
-#                 y_inner_train, y_val = y_train[inner_train_idx], y_train[inner_val_idx]
+            # Evaluate and update best hyperparameters
+            mean_ann_error = np.mean(ann_errors)
+            mean_lr_error = np.mean(lr_errors)
 
-#                 # Train ANN
-#                 ann = MLPRegressor(hidden_layer_sizes=(h,), max_iter=1000, random_state=42)
-#                 ann.fit(X_inner_train, y_inner_train)
-#                 y_pred_ann = ann.predict(X_val)
-#                 ann_errors.append(mean_squared_error(y_val, y_pred_ann))
+            if mean_ann_error < best_ann_error:
+                best_ann_error = mean_ann_error
+                best_h = h
+            if mean_lr_error < best_lr_error:
+                best_lr_error = mean_lr_error
+                best_lambda = lmbd
 
-#                 # Train Ridge Regression
-#                 lr = Ridge(alpha=lmbd)
-#                 lr.fit(X_inner_train, y_inner_train)
-#                 y_pred_lr = lr.predict(X_val)
-#                 lr_errors.append(mean_squared_error(y_val, y_pred_lr))
+    # Train with best hyperparameters on full training set
+    ann_best = MLPRegressor(hidden_layer_sizes=(best_h,), max_iter=1000, random_state=42)
+    ann_best.fit(X_train, y_train)
+    ann_test_error = mean_squared_error(y_test, ann_best.predict(X_test))
 
-#             # Evaluate and update best hyperparameters
-#             mean_ann_error = np.mean(ann_errors)
-#             mean_lr_error = np.mean(lr_errors)
+    lr_best = Ridge(alpha=best_lambda)
+    lr_best.fit(X_train, y_train)
+    lr_test_error = mean_squared_error(y_test, lr_best.predict(X_test))
 
-#             if mean_ann_error < best_ann_error:
-#                 best_ann_error = mean_ann_error
-#                 best_h = h
-#             if mean_lr_error < best_lr_error:
-#                 best_lr_error = mean_lr_error
-#                 best_lambda = lmbd
+    # Baseline: Predict mean of y_train for all test samples
+    baseline_prediction = np.mean(y_train)
+    baseline_test_error = mean_squared_error(y_test, np.full_like(y_test, baseline_prediction))
 
-#     # Train with best hyperparameters on full training set
-#     ann_best = MLPRegressor(hidden_layer_sizes=(best_h,), max_iter=1000, random_state=42)
-#     ann_best.fit(X_train, y_train)
-#     ann_test_error = mean_squared_error(y_test, ann_best.predict(X_test))
+    # Append results for the current fold
+    results.append({
+        'fold': i + 1,
+        'best_h': best_h,
+        'ann_test_error': ann_test_error,
+        'best_lambda': best_lambda,
+        'lr_test_error': lr_test_error,
+        'baseline_test_error': baseline_test_error
+    })
 
-#     lr_best = Ridge(alpha=best_lambda)
-#     lr_best.fit(X_train, y_train)
-#     lr_test_error = mean_squared_error(y_test, lr_best.predict(X_test))
-
-#     # Baseline: Predict mean of y_train for all test samples
-#     baseline_prediction = np.mean(y_train)
-#     baseline_test_error = mean_squared_error(y_test, np.full_like(y_test, baseline_prediction))
-
-#     # Append results for the current fold
-#     results.append({
-#         'fold': i + 1,
-#         'best_h': best_h,
-#         'ann_test_error': ann_test_error,
-#         'best_lambda': best_lambda,
-#         'lr_test_error': lr_test_error,
-#         'baseline_test_error': baseline_test_error
-#     })
-
-# # Print results table
-# print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
-# for res in results:
-#     print(f"{res['fold']} | {res['best_h']} | {res['ann_test_error']:.2f} | {res['best_lambda']} | {res['lr_test_error']:.2f} | {res['baseline_test_error']:.2f}")
+# Print results table
+print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
+for res in results:
+    print(f"{res['fold']} | {res['best_h']} | {res['ann_test_error']:.2f} | {res['best_lambda']} | {res['lr_test_error']:.2f} | {res['baseline_test_error']:.2f}")
