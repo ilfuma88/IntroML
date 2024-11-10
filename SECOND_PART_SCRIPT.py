@@ -373,6 +373,18 @@ def train_neural_netNOPRINT(
         #     "\t\t" + str(i + 1) + "\t" + str(loss_value) + "\t" + str(p_delta_loss)
         # )
         # print(print_str)
+        
+        # Ensure loss_value is a float
+        if isinstance(loss_value, np.ndarray):
+            loss_value = loss_value.item()
+
+        # Ensure best_final_loss is a float
+        if isinstance(best_final_loss, np.ndarray):
+            best_final_loss = best_final_loss.item()
+    
+        #
+        # print(f"loss_value: {loss_value}, best_final_loss: {best_final_loss}")
+        # print(f"loss_value type: {type(loss_value)}, best_final_loss type: {type(best_final_loss)}")
 
         if loss_value < best_final_loss:
             best_net = net
