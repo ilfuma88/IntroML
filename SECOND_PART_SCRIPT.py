@@ -29,6 +29,7 @@ from dtuimldmtools import *
 from sklearn.metrics import mean_squared_error 
 from sklearn.linear_model import Ridge
 from sklearn.neural_network import MLPRegressor
+import time
 
 # Set the working directory (adjust the path as necessary)
 # os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
@@ -418,6 +419,8 @@ results = []
 outer_cv = KFold(n_splits=K1, shuffle=True, random_state=42)
 
 for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
+    start_time = time.time()
+
     X_train, X_test = X[train_idx], X[test_idx]
     y_train, y_test = y[train_idx], y[test_idx]
 
@@ -505,7 +508,9 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
         'baseline_test_error': baseline_test_error
     })
 
-    print(f"Fold {i + 1} completed")
+    current_iteration_time = round(time.time() - start_time, 2)
+
+    print(f"Fold {i + 1} completed in {current_iteration_time} seconds")
 
 # Print results table
 print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
