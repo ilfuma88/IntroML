@@ -31,7 +31,7 @@ from sklearn.linear_model import Ridge
 from sklearn.neural_network import MLPRegressor
 
 # Set the working directory (adjust the path as necessary)
-# os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
+os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
 
 # %% Load dataset
 filename = "raw data.csv"
@@ -89,15 +89,17 @@ CV = model_selection.KFold(K, shuffle=True)
 
 
 # Initial lambda values
-initial_lambdas = [ 0.001, 0.01, 0.05, 0.1, 1, 10, 100, 1000, 10000]
+initial_lambdas = [ 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000]
 
 # Generate additional values between 0.01 and 10
-additional_lambdas = np.logspace(np.log10(10), np.log10(100), num=10)
+additional_lambdas = np.logspace(np.log10(1), np.log10(100), num=10)
 
 # Combine the initial and additional values, ensuring uniqueness and sorting
 lambdas = np.unique(np.concatenate((initial_lambdas, additional_lambdas)))
 
 print(lambdas)
+
+
 
 
 # Initialize variables
@@ -332,7 +334,7 @@ def train_neural_netNOPRINT(
 
         # A more complicated optimizer is the Adam-algortihm, which is an extension
         # of SGD to adaptively change the learing rate, which is widely used:
-        optimizer = torch.optim.Adam(net.parameters())
+        optimizer = torch.optim.Adam(net.parameters(),  lr=1e-4)
 
         # Train the network while displaying and storing the loss
         # print("\t\t{}\t{}\t\t\t{}".format("Iter", "Loss", "Rel. loss"))
@@ -393,11 +395,11 @@ y = X_combined_standard[:, -1]
 
 # Hyperparameter ranges
 hidden_units = [1, 2, 3, 4, 5, 10]  # Example for ANN
-lambdas = [0.01, 0.05, 0.1, 1, 10, 100]  # Example for Ridge regression
+lambdas = [ 0.1, 1, 10, 11, 12,12,14,15,20,30,50, 100]  # Example for Ridge regression
 
 # Outer and inner CV folds
-K1 = 10  # Outer CV
-K2 = 10  # Inner CV
+K1 = 3  # Outer CV
+K2 = 3  # Inner CV
 
 # Prepare for results collection
 results = []
@@ -499,3 +501,67 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
 print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
 for res in results:
     print(f"{res['fold']} | {res['best_h']} | {res['ann_test_error']:.2f} | {res['best_lambda']} | {res['lr_test_error']:.2f} | {res['baseline_test_error']:.2f}")
+
+
+
+# %% structure for statistical testing
+from scipy.stats import t
+
+# Assuming results is a list of dictionaries from your previous outer CV loop:
+# Each dictionary contains 'ann_test_error', 'lr_test_error', and 'baseline_test_error'
+
+# Convert results to arrays for easier computation
+ann_errors = np.array([res['ann_test_error'] for res in results])
+lr_errors = np.array([res['lr_test_error'] for res in results])
+baseline_errors = np.array([res['baseline_test_error'] for res in results])
+
+# Compute error differences for each pairwise comparison across folds
+diff_ann_lr = ann_errors - lr_errors
+diff_ann_baseline = ann_errors - baseline_errors
+diff_lr_baseline = lr_errors - baseline_errors
+
+# Function to calculate mean difference, variance, confidence interval, and p-value
+def statistical_test(diff, n_folds, alpha=0.05):
+    # Mean difference
+    mean_diff = np.mean(diff)
+    
+    # Sample variance of the difference
+    var_diff = np.var(diff, ddof=1)  # Unbiased estimator (n-1 in denominator)
+    
+    # Standard error of the mean difference
+    se_diff = np.sqrt(var_diff / n_folds)
+    
+    # Calculate t-statistic for the given confidence level
+    t_stat = t.ppf(1 - alpha / 2, df=n_folds - 1)
+    
+    # Confidence interval
+    ci_low = mean_diff - t_stat * se_diff
+    ci_high = mean_diff + t_stat * se_diff
+    
+    # Calculate p-value
+    t_value = mean_diff / se_diff
+    p_value = 2 * (1 - t.cdf(np.abs(t_value), df=n_folds - 1))
+    
+    return mean_diff, (ci_low, ci_high), p_value
+
+# Number of folds
+n_folds = len(results)
+
+# Perform statistical tests for each model pair
+alpha = 0.05  # 95% confidence level
+
+# ANN vs. Linear Regression
+mean_diff_ann_lr, ci_ann_lr, p_value_ann_lr = statistical_test(diff_ann_lr, n_folds, alpha)
+
+# ANN vs. Baseline
+mean_diff_ann_baseline, ci_ann_baseline, p_value_ann_baseline = statistical_test(diff_ann_baseline, n_folds, alpha)
+
+# Linear Regression vs. Baseline
+mean_diff_lr_baseline, ci_lr_baseline, p_value_lr_baseline = statistical_test(diff_lr_baseline, n_folds, alpha)
+
+# Display results
+print("Pairwise Comparison Results:")
+print("---------------------------------------------------------")
+print(f"ANN vs. Linear Regression:\n  Mean Difference: {mean_diff_ann_lr:.4f}\n  CI: {ci_ann_lr}\n  p-value: {p_value_ann_lr:.4f}\n")
+print(f"ANN vs. Baseline:\n  Mean Difference: {mean_diff_ann_baseline:.4f}\n  CI: {ci_ann_baseline}\n  p-value: {p_value_ann_baseline:.4f}\n")
+print(f"Linear Regression vs. Baseline:\n  Mean Difference: {mean_diff_lr_baseline:.4f}\n  CI: {ci_lr_baseline}\n  p-value: {p_value_lr_baseline:.4f}")
