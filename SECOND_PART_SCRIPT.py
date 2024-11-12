@@ -29,6 +29,7 @@ from dtuimldmtools import *
 from sklearn.metrics import mean_squared_error 
 from sklearn.linear_model import Ridge
 from sklearn.neural_network import MLPRegressor
+import time
 
 # Set the working directory (adjust the path as necessary)
 os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
@@ -375,6 +376,18 @@ def train_neural_netNOPRINT(
         #     "\t\t" + str(i + 1) + "\t" + str(loss_value) + "\t" + str(p_delta_loss)
         # )
         # print(print_str)
+        
+        # Ensure loss_value is a float
+        if isinstance(loss_value, np.ndarray):
+            loss_value = loss_value.item()
+
+        # Ensure best_final_loss is a float
+        if isinstance(best_final_loss, np.ndarray):
+            best_final_loss = best_final_loss.item()
+    
+        #
+        # print(f"loss_value: {loss_value}, best_final_loss: {best_final_loss}")
+        # print(f"loss_value type: {type(loss_value)}, best_final_loss type: {type(best_final_loss)}")
 
         if loss_value < best_final_loss:
             best_net = net
@@ -408,6 +421,8 @@ results = []
 outer_cv = KFold(n_splits=K1, shuffle=True, random_state=42)
 
 for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
+    start_time = time.time()
+
     X_train, X_test = X[train_idx], X[test_idx]
     y_train, y_test = y[train_idx], y[test_idx]
 
@@ -495,7 +510,9 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
         'baseline_test_error': baseline_test_error
     })
 
-    print(f"Fold {i + 1} completed")
+    current_iteration_time = round(time.time() - start_time, 2)
+
+    print(f"Fold {i + 1} completed in {current_iteration_time} seconds")
 
 # Print results table
 print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
