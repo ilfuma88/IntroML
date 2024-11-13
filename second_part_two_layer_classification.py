@@ -20,13 +20,16 @@ scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
 # Define hyperparameters
-lambda_list = [0.001, 0.01, 0.1, 1, 10, 100]
+# lambda_list = [0.001, 0.01, 0.1, 1, 10, 100]
+lambda_list = [0.001, 0.01, 0.1, 1, 2, 4, 6, 8, 10, 12, 14, 18, 20, 30, 50, 100]
 C_list = [1 / l if l != 0 else 1e6 for l in lambda_list]
-hidden_units_list = [5, 10, 20]
+
+
+hidden_units_list = [(5,5), (10, 10), (20, 20), (30, 30), (30,10),  (40, 40), (50,20), (50,50)]  # Example tuples for two hidden layers
 
 # Cross-validation setup
-outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-inner_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+inner_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
 # Initialize results storage
 fold_results = []
@@ -79,7 +82,7 @@ for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
             X_train_inner, X_val_inner = X_train_outer[train_inner_idx], X_train_outer[val_inner_idx]
             y_train_inner, y_val_inner = y_train_outer[train_inner_idx], y_train_outer[val_inner_idx]
 
-            ann_model = MLPClassifier(hidden_layer_sizes=(hidden_units,), activation='relu', solver='adam',
+            ann_model = MLPClassifier(hidden_layer_sizes=hidden_units, activation='relu', solver='adam',
                                       max_iter=200, random_state=42)
             ann_model.fit(X_train_inner, y_train_inner)
             val_scores.append(ann_model.score(X_val_inner, y_val_inner))
@@ -91,7 +94,7 @@ for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
     best_hidden_units = hidden_units_list[best_index_ann]
 
     # Retrain ANN with best hyperparameter
-    ann_model_final = MLPClassifier(hidden_layer_sizes=(best_hidden_units,), activation='relu', solver='adam',
+    ann_model_final = MLPClassifier(hidden_layer_sizes=best_hidden_units, activation='relu', solver='adam',
                                     max_iter=200, random_state=42)
     ann_model_final.fit(X_train_outer, y_train_outer)
     y_pred_ann = ann_model_final.predict(X_test_outer)
@@ -127,5 +130,5 @@ plt.title('Model Misclassification Error Across Folds', fontsize=16)
 plt.ylabel('Misclassification Error', fontsize=14)
 plt.xlabel('Models', fontsize=14)
 plt.ylim(0, 1)
-plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.grid(True)
 plt.show()
