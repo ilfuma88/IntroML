@@ -1,4 +1,5 @@
 """ 
+GOOD
 This code performs classification using Logistic Regression and ANN models,
 evaluates them using cross-validation, and adds McNemar's test to compare the models.
 """
@@ -10,7 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.dummy import DummyClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from statsmodels.stats.contingency_tables import mcnemar
+from statsmodels.stats.contingency_tables import mcnemar, Table2x2
 import matplotlib.pyplot as plt
 
 # Load and preprocess data
@@ -137,8 +138,6 @@ logreg_preds_all = np.array(logreg_preds_all)
 ann_preds_all = np.array(ann_preds_all)
 
 # Perform McNemar's tests
-from statsmodels.stats.contingency_tables import mcnemar
-
 model_pairs = [
     ('Baseline', baseline_preds_all),
     ('Logistic Regression', logreg_preds_all),
@@ -166,12 +165,20 @@ for i in range(len(model_pairs)):
 
         # Perform McNemar's test
         result = mcnemar(contingency_table, exact=False, correction=True)
+        
+        # Calculate confidence interval for the odds ratio
+        table = Table2x2(contingency_table)
+        odds_ratio = table.oddsratio
+        ci_low, ci_upp = table.oddsratio_confint()
 
         mcnemar_results.append({
             'Model A': model_a_name,
             'Model B': model_b_name,
             'Statistic': result.statistic,
-            'p-value': result.pvalue
+            'p-value': result.pvalue,
+            'Odds Ratio': odds_ratio,
+            'CI Lower': ci_low,
+            'CI Upper': ci_upp
         })
 
 # Create DataFrame to display results
