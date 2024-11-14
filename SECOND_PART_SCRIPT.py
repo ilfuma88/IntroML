@@ -32,8 +32,8 @@ from sklearn.neural_network import MLPRegressor
 import time
 
 # Set the working directory (adjust the path as necessary)
-os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
-
+# os.chdir(r"C:\Users\elefa\OneDrive - Danmarks Tekniske Universitet\DTU\FALL2024\02450_ITMLADM\PROJECT\IntroML")
+begin_time = time.time()
 # %% Load dataset
 filename = "raw data.csv"
 df = pd.read_csv(filename, sep=";")
@@ -203,7 +203,7 @@ for train_index, test_index in CV.split(X, y):
 
     k += 1
 
-show()
+#show()
 # Display results
 print("Linear regression without feature selection:")
 print("- Training error: {0}".format(Error_train.mean()))
@@ -407,12 +407,13 @@ X = X_combined_standard[:, :-1]
 y = X_combined_standard[:, -1]
 
 # Hyperparameter ranges
-hidden_units = [1, 2, 3, 4, 5, 10]  # Example for ANN
-lambdas = [ 0.1, 1, 10, 11, 12,12,14,15,20,30,50, 100]  # Example for Ridge regression
+hidden_units = [1, 5, 10, 20, 30, 40, 50, 55, 60, 70, 75, 80, 85, 90, 95, 100]  # Example for ANN
+# hidden_units = list(range(1, 101))
+lambdas = [0.1, 1, 5, 10, 12, 15, 18, 20, 25, 30, 50, 100]  # Example for Ridge regression
 
 # Outer and inner CV folds
-K1 = 3  # Outer CV
-K2 = 3  # Inner CV
+K1 = 10  # Outer CV
+K2 = 10  # Inner CV
 
 # Prepare for results collection
 results = []
@@ -425,7 +426,7 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
 
     X_train, X_test = X[train_idx], X[test_idx]
     y_train, y_test = y[train_idx], y[test_idx]
-
+    test_size = len(y_test)
     # Variables to store best hyperparameters and errors
     best_h = None
     best_lambda = None
@@ -487,7 +488,7 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
                 best_lambda = lmbd
 
     # Train with best hyperparameters on full training set
-    ann_best = MLPRegressor(hidden_layer_sizes=(best_h,), max_iter=1000, random_state=42)
+    ann_best = MLPRegressor(hidden_layer_sizes=(best_h,), max_iter=10000, random_state=42)
     ann_best.fit(X_train, y_train)
     ann_test_error = mean_squared_error(y_test, ann_best.predict(X_test))
 
@@ -517,8 +518,42 @@ for i, (train_idx, test_idx) in enumerate(outer_cv.split(X)):
 # Print results table
 print("Fold | Best h | ANN Test Error | Best λ | Linear Regression Test Error | Baseline Test Error")
 for res in results:
-    print(f"{res['fold']} | {res['best_h']} | {res['ann_test_error']:.2f} | {res['best_lambda']} | {res['lr_test_error']:.2f} | {res['baseline_test_error']:.2f}")
+    print(f"{res['fold']} | {res['best_h']} | {res['ann_test_error']:.4f} | {res['best_lambda']} | {res['lr_test_error']:.4f} | {res['baseline_test_error']:.4f}")
 
+
+# THIS ONLY COMPUTES THE GRAPH ON THE LAST FOLD, NEED TO STORE THE RESULTS IN AN ARRAY AND THEN COMPUTE THE GRAPH
+# # Add the graph generation code here
+# import matplotlib.pyplot as plt
+
+# # Generate predictions for the test set using the best models
+# y_pred_lr = X_test @ w_rlr
+# y_pred_ann = ann_best.predict(X_test)
+# baseline_prediction = np.mean(y_train)
+
+# # Plot the results
+# plt.figure(figsize=(10, 6))
+
+# # Plot true values
+# plt.scatter(y_test, y_test, color='blue', label='True Values', alpha=0.5, marker='o')
+
+# # Plot regression predictions
+# plt.scatter(y_test, y_pred_lr, color='red', label='Regression Predictions', alpha=0.5, marker='x')
+
+# # Plot ANN predictions
+# plt.scatter(y_test, y_pred_ann, color='green', label='ANN Predictions', alpha=0.5, marker='^')
+
+# # Plot baseline predictions
+# plt.scatter(y_test, np.full_like(y_test, baseline_prediction), color='orange', label='Baseline Predictions', alpha=0.5, marker='s')
+
+# # Add labels and legend
+# plt.xlabel('Actual Values')
+# plt.ylabel('Predicted Values')
+# plt.title('Predicted vs Actual Values')
+# plt.legend()
+# plt.grid(True)
+
+# # Show the plot
+# plt.show()
 
 
 # %% structure for statistical testing
@@ -582,3 +617,9 @@ print("---------------------------------------------------------")
 print(f"ANN vs. Linear Regression:\n  Mean Difference: {mean_diff_ann_lr:.4f}\n  CI: {ci_ann_lr}\n  p-value: {p_value_ann_lr:.4f}\n")
 print(f"ANN vs. Baseline:\n  Mean Difference: {mean_diff_ann_baseline:.4f}\n  CI: {ci_ann_baseline}\n  p-value: {p_value_ann_baseline:.4f}\n")
 print(f"Linear Regression vs. Baseline:\n  Mean Difference: {mean_diff_lr_baseline:.4f}\n  CI: {ci_lr_baseline}\n  p-value: {p_value_lr_baseline:.4f}")
+
+total_time = round(time.time() - begin_time, 2)
+print(f"Total time elapsed: ")
+total_hours, rem = divmod(total_time, 3600)
+total_minutes, total_seconds = divmod(rem, 60)
+print(f"{int(total_hours)} hours, {int(total_minutes)} minutes, {total_seconds:.2f} seconds")
