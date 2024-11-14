@@ -1,3 +1,6 @@
+"""
+        salssification plus calssification.
+        the is the statystical anlysis as well but probably is broken """
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
